@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import DragNDrop from './DragNDrop';
 import './App.css';
-import { getBase64HashFromUrl, getResourceHTML, getBase64HashFromFile } from './utils';
+import {getBase64HashFromUrl, getResourceHTML, getBase64HashFromFile, getResourceIncludesHTML, parseUrlComment} from './utils';
 
 class App extends Component {
   constructor(props) {
@@ -9,22 +9,30 @@ class App extends Component {
     this.state = {
       url: '',
       sha256: false,
-      sha384: true,
-      sha512: false,
+      sha384: false,
+      sha512: true,
+      returnAsIncludes: true,
       resource: '',
       submitting: false,
     };
   }
-  generate(getHash, filename) {
+  generate(getHash) {
     this.setState({
       submitting: true,
       resource: '',
     });
-    getHash()
-      .then(
-        (hash) => {
+    let me = this;
+    getHash().then((result) => {
+          let res = '';
+          result.items.forEach((item) => {
+            if(me.state.returnAsIncludes){
+              res+=getResourceIncludesHTML(item.url, item.hash)+`${item.comment}\r\n `;
+            } else{
+              res+=getResourceHTML(item.url, item.hash)+`${item.comment}\r\n`;
+            }
+          });
           this.setState({
-            resource: getResourceHTML(filename, hash),
+            resource:res,
             submitting: false,
           });
         },
@@ -63,7 +71,11 @@ class App extends Component {
     const file = e.dataTransfer.files[0];
     if (!file) return;
     const types = this.getTypes();
-    this.generate(() => getBase64HashFromFile(types, file), `./${file.name}`);
+    this.generate(() => {
+      let res = {items:[]};
+      res.push({hash:getBase64HashFromFile(types, file), url:`./${file.name}`, comment:''});
+      return res;
+    });
   }
   onHashTypeChange = (e) => {
     const type = e.target.id;
@@ -80,10 +92,24 @@ class App extends Component {
     const url = this.state.url.trim();
     if (!url) return;
     const types = this.getTypes();
-    this.generate(() => getBase64HashFromUrl(types, url), url);
+    let urls = url.replace('\r','').split('\n');
+
+    this.generate(() => {
+      return new Promise((resolve, reject) => {
+        let result = {items:[]};
+        let promises = [];
+        urls.forEach((urlItem)=>{
+          let urlComment= parseUrlComment(urlItem);
+          let p = getBase64HashFromUrl(types, urlComment.url)
+              .then((res)=>result.items.push({url:urlComment.url, hash:res, comment:urlComment.comment}));
+          promises.push(p);
+        });
+        Promise.all(promises).then(() => resolve(result));
+      });
+    });
   }
   render() {
-    const { url, sha256, sha384, sha512, submitting, resource } = this.state;
+    const { url, sha256, sha384, sha512, returnAsIncludes, submitting, resource } = this.state;
     const isValid = url.trim().length > 0 && (sha256 || sha384 || sha512);
     return (
       <DragNDrop onDrop={this.onDrop} className="container">
@@ -92,7 +118,7 @@ class App extends Component {
           <form onSubmit={this.onSubmit}>
             <div className="field-group">
               <p><label htmlFor="input">Enter url or drop file below</label></p>
-              <input id="input" type="text" value={url} onChange={this.onUrlChange} />
+              <textarea id="input" value={url} onChange={this.onUrlChange} rows="10" cols="150" />
             </div>
             <div className="field-group">
               <input id="sha256" type="checkbox" checked={sha256} onChange={this.onHashTypeChange} />
@@ -101,19 +127,16 @@ class App extends Component {
               <label htmlFor="sha384">sha384</label>
               <input id="sha512" type="checkbox" checked={sha512} onChange={this.onHashTypeChange} />
               <label htmlFor="sha512">sha512</label>
+              <input id="returnAsIncludes" type="checkbox" checked={returnAsIncludes} onChange={this.onHashTypeChange} />
+              <label htmlFor="returnAsIncludes">Return As Includes</label>
             </div>
             <button type="submit" disabled={!isValid || submitting}>Generate</button>
           </form>
           <section>
-            <span>{resource}</span>
+            <span style={{whiteSpace: 'pre', fontFamily: 'monospace', display: 'block', unicodeBidi: 'embed'}}>{resource}</span>
           </section>
           <div className="operation">
-            <button
-              aria-label="copy generated HTML with integrity"
-              onClick={this.onCopy}
-              className="btn-copy"
-              disabled={!resource}
-            >
+            <button aria-label="copy generated HTML with integrity" onClick={this.onCopy} className="btn-copy" disabled={!resource}>
               Copy
             </button>
           </div>
@@ -126,5 +149,4 @@ class App extends Component {
     );
   }
 }
-
 export default App;

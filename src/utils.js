@@ -1,4 +1,20 @@
-import crypto from 'crypto';
+import crypto from 'crypto-js';
+export function parseUrlComment(inputString) {
+  const urlRegex = /(https?:\/\/[-\]_.~!*'();:@&=+$,/?%#[A-z0-9]+)/;
+  const commentRegex = /[ ,](\/\/.*)/;
+
+  // Extract URL
+  const urlMatch = inputString.match(urlRegex);
+  const url = urlMatch ? urlMatch[1] : '';
+
+  // Extract comment
+  const commentMatch = inputString.match(commentRegex);
+  const comment = commentMatch ? commentMatch[1] : '';
+
+  return { url, comment };
+}
+
+// Example usage:
 
 async function getResourceContent(url) {
   const response = await fetch(url);
@@ -7,7 +23,17 @@ async function getResourceContent(url) {
 }
 
 function getHash(type, content) {
-  return crypto.createHash(type).update(content, 'utf8').digest('base64');
+  let hash;
+  if(type === 'sha256'){
+    hash = crypto.SHA256(content, { outputLength: 256 });
+  }
+  if(type === 'sha384'){
+    hash = crypto.SHA384(content, { outputLength: 384 });
+  }
+  if(type === 'sha512'){
+    hash = crypto.SHA512(content, { outputLength: 512 });
+  }
+  return hash.toString(crypto.enc.Base64);
 }
 
 export async function getBase64HashFromUrl(types, url) {
@@ -25,6 +51,14 @@ export function getResourceHTML(url, hash) {
   } else {
     return `<script type="text/javascript" src="${url}" integrity="${hash}" crossorigin="anonymous"></script>`;
   }
+}
+export function getResourceIncludesHTML(url, hash) {
+  const cf = "https://cdnjs.cloudflare.com/ajax/libs/";
+  const maxcdn = "https://maxcdn.bootstrapcdn.com/";
+  const jsdelivr = "https://cdn.jsdelivr.net/";
+  const google = "https://maps.googleapis.com/";
+  url = url.replace(cf,'{cf}').replace(maxcdn,'{maxcdn}').replace(jsdelivr,'{jsdelivr}').replace(google,'{google}');
+  return `new []{$"${url}","${hash}"},`;
 }
 
 function readContentFromFile(file) {
