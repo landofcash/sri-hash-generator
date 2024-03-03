@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/sri-hash-generator/static/css/main.659ce42f.css",
-    "main.js": "/sri-hash-generator/static/js/main.95d8d858.js",
+    "main.js": "/sri-hash-generator/static/js/main.130f8dc9.js",
     "index.html": "/sri-hash-generator/index.html",
     "main.659ce42f.css.map": "/sri-hash-generator/static/css/main.659ce42f.css.map",
-    "main.95d8d858.js.map": "/sri-hash-generator/static/js/main.95d8d858.js.map"
+    "main.130f8dc9.js.map": "/sri-hash-generator/static/js/main.130f8dc9.js.map"
   },
   "entrypoints": [
     "static/css/main.659ce42f.css",
-    "static/js/main.95d8d858.js"
+    "static/js/main.130f8dc9.js"
   ]
 }
