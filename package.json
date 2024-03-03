@@ -27,7 +27,7 @@
     "not ie <= 11",
     "not op_mini all"
   ],
-  "homepage": "https://laysent.github.io/sri-hash-generator",
+  "homepage": "https://landofcash.github.io/sri-hash-generator",
   "devDependencies": {
     "gh-pages": "^6.1.1"
   }

@@ -100,8 +100,9 @@ class App extends Component {
         let promises = [];
         urls.forEach((urlItem)=>{
           let urlComment= parseUrlComment(urlItem);
+          result.items.push({url:urlComment.url, hash:'', comment:urlComment.comment})
           let p = getBase64HashFromUrl(types, urlComment.url)
-              .then((res)=>result.items.push({url:urlComment.url, hash:res, comment:urlComment.comment}));
+              .then((res)=>{result.items.find((x) => x.url ===urlComment.url).hash=res;});
           promises.push(p);
         });
         Promise.all(promises).then(() => resolve(result));
